@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 01:23:03.937
+@changed : 2012-11-04 01:37:40.364
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -12,17 +12,24 @@ from __future__ import print_function
 import os, sys
 from PyQt4 import QtGui, QtCore
 from db.sqlite import SQLite
+from datetime import datetime
 
 
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 2)
+__version__  = (0, 0, 3)
 
 
 def getVersion():
     """Version number in string format"""
     return '.'.join(map(str, __version__))
+
+
+
+def now():
+    """Current date-time"""
+    return str(datetime.now())[:-3]
 
 
 
@@ -48,7 +55,6 @@ class MainWindow(QtGui.QMainWindow):
         self.createMenus()
         self.createToolBars()
         self.createStatusBar()
-        self.createDockWindows()
         self.editWidget = QtGui.QTextEdit()
         self.setCentralWidget(self.editWidget)
 
@@ -68,12 +74,17 @@ class MainWindow(QtGui.QMainWindow):
         if not dbEncoding:
             dbEncoding = "utf8"
             settings.setValue( "Default/DB_ENCODING", dbEncoding )
-        self.initDb(dbName, dbEncoding)
+        debug = settings.value("Default/DEBUG", "False")
+        self.debug = False if debug in ("0", "False") else True
+
+        self.createDockWindows()
 
         self.logger = QCCLog(self.logWidget)
         sys.stdout = sys.stderr = self.logger
-        print("stdout: Example error logging")
-        sys.stderr.write("stderr: Example error logging")
+
+        self.initDb(dbName, dbEncoding)
+        if self.debug:
+            self.logger.write( "{} database initialized".format(now()) )
 
 
     def closeEvent(self, event):
@@ -135,11 +146,9 @@ class MainWindow(QtGui.QMainWindow):
                                   QtCore.Qt.RightDockWidgetArea)
         self.logWidget = QtGui.QListWidget()
         dockWidget.setWidget(self.logWidget)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dockWidget)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dockWidget)
         self.viewMenu.addAction(dockWidget.toggleViewAction())
-        # if we don't want to show log widget right away
-        # we can uncomment next line:
-        #dockWidget.close()
+        if not self.debug: dockWidget.close()
 
 
     def about(self):
