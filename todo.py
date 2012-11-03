@@ -3,17 +3,21 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 00:14:14.281
+@changed : 2012-11-04 01:23:03.937
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
 from __future__ import print_function
 
-import sys
+import os, sys
 from PyQt4 import QtGui, QtCore
+from db.sqlite import SQLite
 
 
-__version__  = (0, 0, 1)
+APP_DIR = os.path.dirname( __file__ )
+
+
+__version__  = (0, 0, 2)
 
 
 def getVersion():
@@ -50,12 +54,21 @@ class MainWindow(QtGui.QMainWindow):
 
         # read settings
         settings = QtCore.QSettings("todo.conf", QtCore.QSettings.IniFormat)
-        #self.restoreGeometry(settings.value("MainWindow/Geometry"))
-        #self.restoreState(settings.value("MainWindow/State"))
         size = settings.value("MainWindow/Size", QtCore.QSize(800, 600))
         self.resize(size)
         position = settings.value("MainWindow/Position", QtCore.QPoint(10, 10))
         self.move(position)
+        # initializing database
+        dbName = settings.value("Default/DB_NAME")
+        if not dbName:
+            dbName = "db/todo.sqlite3"
+            settings.setValue( "Default/DB_NAME", dbName )
+        dbName = os.path.normpath( os.path.join( APP_DIR, dbName ) )
+        dbEncoding = settings.value("Default/DB_ENCODING")
+        if not dbEncoding:
+            dbEncoding = "utf8"
+            settings.setValue( "Default/DB_ENCODING", dbEncoding )
+        self.initDb(dbName, dbEncoding)
 
         self.logger = QCCLog(self.logWidget)
         sys.stdout = sys.stderr = self.logger
@@ -65,10 +78,14 @@ class MainWindow(QtGui.QMainWindow):
 
     def closeEvent(self, event):
         settings = QtCore.QSettings("todo.conf", QtCore.QSettings.IniFormat)
-        #settings.setValue("MainWindow/Geometry", self.saveGeometry())
-        #settings.setValue("MainWindow/State", self.saveState())
         settings.setValue( "MainWindow/Size", self.size() )
         settings.setValue( "MainWindow/Position", self.pos() )
+
+
+    def initDb(self, name, encoding):
+        """Initializing SQLite database"""
+        self.dbName = name
+        self.db = SQLite(self.dbName, encoding)
 
 
     def createActions(self):

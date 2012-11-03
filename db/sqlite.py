@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-04 00:29:46.091
+@changed : 2012-11-04 01:23:15.325
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 1
+__revision__ = 2
 
 
 def getRevision():
@@ -34,9 +34,10 @@ def md5sum(value):
 class SQLite(object):
     """ SQLite3 utils """
 
-    def __init__(self, name):
+    def __init__(self, name, encoding='utf8'):
         """ Databse constructor """
         self.name  = name
+        self.encoding = encoding
         self._local = threading.local()
         with threading.Lock():
             self._local.conn = sqlite3.connect(name, detect_types=sqlite3.PARSE_DECLTYPES)
