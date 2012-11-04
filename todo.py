@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 12:37:09.630
+@changed : 2012-11-04 12:48:29.567
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -19,7 +19,7 @@ from datetime import datetime, date, timedelta
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 5)
+__version__  = (0, 0, 6)
 
 
 def getVersion():
@@ -100,11 +100,11 @@ class MainWindow(QtGui.QMainWindow):
         self.dbName = name
         self.db = SQLite(self.dbName, encoding)
         self.priority = Priority(self.db)
-        self.table = Task(self.db)
+        self.task = Task(self.db)
         # for testing purposes
-        count = self.db.execSql( "select count(*) from {};".format(self.table.name) )[0][0]
+        count = self.db.execSql( "select count(*) from {};".format(self.task.name) )[0][0]
         if count==0:
-            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.table.name),
+            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task.name),
                              ("Low Test", 1, date.today() + timedelta(2)) )
             self.db.commit()
 
