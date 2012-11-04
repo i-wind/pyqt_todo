@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 21:23:17.516
+@changed : 2012-11-04 22:16:33.754
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -14,12 +14,13 @@ from PyQt4 import QtGui, QtCore
 from db.sqlite import SQLite
 from db.model import Priority, Task
 from datetime import datetime, date, timedelta
+from ui.dlg_newtask import NewTaskDialog
 
 
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 7)
+__version__  = (0, 0, 8)
 
 
 def getVersion():
@@ -102,8 +103,7 @@ class MainWindow(QtGui.QMainWindow):
         self.priority = Priority(self.db)
         self.task = Task(self.db)
         # for testing purposes
-        count = self.db.execSql( "select count(*) from {};".format(self.task.name) )[0][0]
-        if count==0:
+        if self.task.count()==0:
             self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task.name),
                              ("Low Test", 1, date.today() + timedelta(2)) )
             self.db.commit()
@@ -206,7 +206,13 @@ class MainWindow(QtGui.QMainWindow):
 
 
     def newTask(self):
-        QtGui.QMessageBox.information(self, self.tr("New task"), self.tr("New task button clicked..."))
+        dialog = NewTaskDialog(self)
+        dialog.priority.addItems(['Low', 'Medium', 'High'])
+        if dialog.exec_():
+            row = self.db.execSql( 'select code from TodoPriority where name=?', (dialog.priority.currentText(),) )[0]
+            values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate() )
+            self.db.execSql('insert into TodoTask (name, priority, deadline) values(?, ?, ?);', values )
+            self.db.commit()
 
 
     def about(self):
