@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 22:16:33.754
+@changed : 2012-11-04 22:23:07.780
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 8)
+__version__  = (0, 0, 9)
 
 
 def getVersion():
@@ -159,6 +159,15 @@ class MainWindow(QtGui.QMainWindow):
         status.showMessage(self.tr("Ready"), 5000)
 
 
+    def openContextMenu(self, position):
+        menu = QtGui.QMenu(self)
+        menu.addAction(self.newTaskAction)
+        menu.addSeparator()
+        menu.addAction(self.aboutAction)
+        #menu.exec_(self.tableWidget.mapToGlobal(position))
+        menu.popup(QtGui.QCursor.pos())
+
+
     def createTableWidget(self):
         """Table widget creation to display TODO lists"""
         self.tableWidget = QtGui.QTableWidget(0, 6)
@@ -173,6 +182,10 @@ class MainWindow(QtGui.QMainWindow):
         #self.tableWidget.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
         self.tableWidget.verticalHeader().hide()
         self.tableWidget.setShowGrid(True)
+        #self.tableWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        #self.addActions(self.tableWidget, (self.newAction, self.aboutAction))
+        self.tableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tableWidget.customContextMenuRequested.connect(self.openContextMenu)
         self.refreshTable()
 
 
