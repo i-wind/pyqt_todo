@@ -3,7 +3,7 @@
 """
 @script  : model.py
 @created : 2012-11-04 01:48:15.090
-@changed : 2012-11-04 03:26:56.730
+@changed : 2012-11-04 12:50:45.823
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : model of TODO application
@@ -13,7 +13,7 @@ from __future__ import print_function
 from argparse import ArgumentParser
 
 
-__revision__ = 3
+__revision__ = 4
 __project__  = "Todo"
 
 
@@ -42,6 +42,10 @@ class Table(object):
 
     def setDefaults(self):
         pass
+
+
+    def count(self):
+        return self.db.execSql( "select count(*) from {};".format(self.name) )[0][0]
 
 
 

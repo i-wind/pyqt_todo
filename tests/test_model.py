@@ -3,7 +3,7 @@
 """
 @script  : test_model.py
 @created : 2012-11-04 02:28:46.742
-@changed : 2012-11-04 11:34:34.251
+@changed : 2012-11-04 12:50:59.478
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : testing application model classes
@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 from sqlite3 import IntegrityError
 
 
-__revision__ = 3
+__revision__ = 4
 
 
 
@@ -43,7 +43,7 @@ class PriorityTable(unittest.TestCase):
 
 
     def test_defaults(self):
-        cnt = self.db.execSql( "select count(*) from {};".format(self.table.name) )[0][0]
+        cnt = self.table.count()
         self.assertEqual( cnt, 3 )
 
 
@@ -92,7 +92,7 @@ class TaskTable(unittest.TestCase):
 
 
     def test_records(self):
-        cnt = self.db.execSql( "select count(*) from {};".format(self.table.name) )[0][0]
+        cnt = self.table.count()
         self.assertEqual( cnt, 3 )
 
 
