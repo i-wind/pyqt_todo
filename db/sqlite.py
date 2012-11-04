@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-04 01:23:15.325
+@changed : 2012-11-04 18:42:04.429
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,12 +16,40 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 2
+__revision__ = 3
 
 
 def getRevision():
     """ Callback method for -r/--revision option """
     return str(__revision__)
+
+
+
+class Field(object):
+
+    def __init__(self,
+                unique      = False,
+                notnull     = False,
+                default     = None,
+                fieldtype   = "text",
+                validate    = None,
+                displayname = None,
+                foreignkey  = None,
+                index       = False,
+                primary     = False):
+        self.coldef = (
+                (fieldtype + ' ') +
+                ('primary key ' if primary else '') +
+                ('unique ' if unique else '') +
+                ('not null ' if notnull else '') +
+                ('references %s ' % foreignkey if not foreignkey is None else '') +
+                ('default %s' % default if not default is None else '')
+            ).rstrip()
+        self.validate    = validate # check whether this is a function w. 1 arg?
+        self.displayname = displayname
+        self.foreignkey  = foreignkey
+        self.index       = index
+        self.primary     = primary
 
 
 
