@@ -116,6 +116,8 @@ class MainWindow(QtGui.QMainWindow):
                 statusTip=self.tr("Adding new TODO item"), triggered=self.newTask)
         self.completeAction = QtGui.QAction(QtGui.QIcon('images/editedit.png'),
                 self.tr("Complete TODO item"), self, statusTip=self.tr("Completing TODO item"), triggered=self.completeTask)
+        self.deleteAction = QtGui.QAction(QtGui.QIcon('images/editdelete.png'),
+                self.tr("Delete TODO item"), self, statusTip=self.tr("Deleting TODO item"), triggered=self.deleteTask)
         self.exitAction = QtGui.QAction(QtGui.QIcon('images/exit.png'), self.tr('Exit'), self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip(self.tr('Exit application'))
@@ -167,7 +169,7 @@ class MainWindow(QtGui.QMainWindow):
         menu.addAction(self.newTaskAction)
         menu.addAction(self.completeAction)
         menu.addSeparator()
-        menu.addAction(self.aboutAction)
+        menu.addAction(self.deleteAction)
         #menu.exec_(self.tableWidget.mapToGlobal(position))
         menu.popup(QtGui.QCursor.pos())
 
@@ -238,6 +240,7 @@ class MainWindow(QtGui.QMainWindow):
         row = self.tableWidget.currentRow()
         if row==-1:
             msgBox = QtGui.QMessageBox()
+            msgBox.setWindowTitle (self.tr('Complete'))
             msgBox.setText(self.tr('Select a task to complete!'))
             msgBox.exec_()
             return
@@ -248,6 +251,27 @@ class MainWindow(QtGui.QMainWindow):
             self.db.execSql('update TodoTask set status=1, completed=? where id=?', (datetime.now(), int(_id)))
             self.db.commit()
             self.refreshTable()
+
+
+    def deleteTask(self):
+        # index and id of currently selected row
+        row = self.tableWidget.currentRow()
+        if row==-1:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setWindowTitle (self.tr('Delete'))
+            msgBox.setText(self.tr('Select a task to delete!'))
+            msgBox.exec_()
+            return
+        _id = self.tableWidget.item(row, 0).text()
+        if QtGui.QMessageBox.question(self, self.tr('Delete'), self.tr('Are you sure to delete this record (id={})?').format(_id),
+                                      QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            # remove row from table widget
+            self.tableWidget.removeRow( row )
+            # remove record from database
+            self.logger.write( "{} delete from TodoTask where id={}".format(now(), _id) )
+            self.db.execSql( 'delete from TodoTask where id=?', (int(_id),) )
+            self.db.commit()
+            self.statusBar().showMessage('Deleted record id=' + _id, 5000)
 
 
     def about(self):
