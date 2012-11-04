@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 22:23:07.780
+@changed : 2012-11-04 22:45:27.725
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 9)
+__version__  = (0, 0, 10)
 
 
 def getVersion():
@@ -114,6 +114,8 @@ class MainWindow(QtGui.QMainWindow):
         self.newTaskAction = QtGui.QAction(QtGui.QIcon('images/editadd.png'),
                 self.tr("Add TODO item"), self, shortcut=QtGui.QKeySequence.New,
                 statusTip=self.tr("Adding new TODO item"), triggered=self.newTask)
+        self.completeAction = QtGui.QAction(QtGui.QIcon('images/editedit.png'),
+                self.tr("Complete TODO item"), self, statusTip=self.tr("Completing TODO item"), triggered=self.completeTask)
         self.exitAction = QtGui.QAction(QtGui.QIcon('images/exit.png'), self.tr('Exit'), self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip(self.tr('Exit application'))
@@ -143,6 +145,7 @@ class MainWindow(QtGui.QMainWindow):
         taskToolBar = self.addToolBar("Task")
         taskToolBar.setObjectName("TaskToolbar")
         taskToolBar.addAction(self.newTaskAction)
+        taskToolBar.addAction(self.completeAction)
 
         exitToolBar = self.addToolBar("Exit")
         exitToolBar.setObjectName("ExitToolbar")
@@ -162,6 +165,7 @@ class MainWindow(QtGui.QMainWindow):
     def openContextMenu(self, position):
         menu = QtGui.QMenu(self)
         menu.addAction(self.newTaskAction)
+        menu.addAction(self.completeAction)
         menu.addSeparator()
         menu.addAction(self.aboutAction)
         #menu.exec_(self.tableWidget.mapToGlobal(position))
@@ -226,6 +230,24 @@ class MainWindow(QtGui.QMainWindow):
             values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate() )
             self.db.execSql('insert into TodoTask (name, priority, deadline) values(?, ?, ?);', values )
             self.db.commit()
+            self.refreshTable()
+
+
+    def completeTask(self):
+        # index of currently selected row
+        row = self.tableWidget.currentRow()
+        if row==-1:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText(self.tr('Select a task to complete!'))
+            msgBox.exec_()
+            return
+        # id of currently selected row
+        _id = self.tableWidget.item(row, 0).text()
+        if QtGui.QMessageBox.question(self, self.tr('Complete'), self.tr('Are you sure to complete this task (id={})?').format(_id),
+                                      QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            self.db.execSql('update TodoTask set status=1, completed=? where id=?', (datetime.now(), int(_id)))
+            self.db.commit()
+            self.refreshTable()
 
 
     def about(self):
