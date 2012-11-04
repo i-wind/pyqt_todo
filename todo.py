@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 11:46:55.845
+@changed : 2012-11-04 12:37:09.630
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -12,13 +12,14 @@ from __future__ import print_function
 import os, sys
 from PyQt4 import QtGui, QtCore
 from db.sqlite import SQLite
-from datetime import datetime
+from db.model import Priority, Task
+from datetime import datetime, date, timedelta
 
 
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 4)
+__version__  = (0, 0, 5)
 
 
 def getVersion():
@@ -55,8 +56,6 @@ class MainWindow(QtGui.QMainWindow):
         self.createMenus()
         self.createToolBars()
         self.createStatusBar()
-        self.editWidget = QtGui.QTextEdit()
-        self.setCentralWidget(self.editWidget)
 
         # read settings
         settings = QtCore.QSettings("todo.conf", QtCore.QSettings.IniFormat)
@@ -80,11 +79,14 @@ class MainWindow(QtGui.QMainWindow):
         self.createDockWindows()
 
         self.logger = QCCLog(self.logWidget)
-        sys.stdout = sys.stderr = self.logger
+        #sys.stdout = sys.stderr = self.logger
 
         self.initDb(dbName, dbEncoding)
         if self.debug:
             self.logger.write( "{} database initialized".format(now()) )
+
+        self.createTableWidget()
+        self.setCentralWidget(self.tableWidget)
 
 
     def closeEvent(self, event):
@@ -97,6 +99,14 @@ class MainWindow(QtGui.QMainWindow):
         """Initializing SQLite database"""
         self.dbName = name
         self.db = SQLite(self.dbName, encoding)
+        self.priority = Priority(self.db)
+        self.table = Task(self.db)
+        # for testing purposes
+        count = self.db.execSql( "select count(*) from {};".format(self.table.name) )[0][0]
+        if count==0:
+            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.table.name),
+                             ("Low Test", 1, date.today() + timedelta(2)) )
+            self.db.commit()
 
 
     def createActions(self):
@@ -137,6 +147,40 @@ class MainWindow(QtGui.QMainWindow):
         status.setSizeGripEnabled(True)
         status.addPermanentWidget(self.sizeLabel)
         status.showMessage(self.tr("Ready"), 5000)
+
+
+    def createTableWidget(self):
+        """Table widget creation to display TODO lists"""
+        self.tableWidget = QtGui.QTableWidget(0, 6)
+        self.tableWidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        # select one row at a time
+        self.tableWidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        # no editing values
+        self.tableWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+
+        self.tableWidget.setHorizontalHeaderLabels((self.tr("ID"), self.tr("Name"), self.tr("Priority"), self.tr("Deadline"),
+                                                    self.tr("Completed"), self.tr("Created")))
+        #self.tableWidget.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
+        self.tableWidget.verticalHeader().hide()
+        self.tableWidget.setShowGrid(True)
+        self.refreshTable()
+
+
+    def refreshTable(self):
+        self.tableWidget.setRowCount(0)
+        rows = self.db.execSql("select * from TodoTask where completed is null")
+        for row in rows:
+            cnt = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(cnt)
+            self.tableWidget.setItem(cnt, 0, QtGui.QTableWidgetItem(str(row["id"])))
+            self.tableWidget.setItem(cnt, 1, QtGui.QTableWidgetItem(row["name"]))
+            self.tableWidget.setItem(cnt, 2, QtGui.QTableWidgetItem(str(row["priority"])))
+            self.tableWidget.setItem(cnt, 3, QtGui.QTableWidgetItem(str(row["deadline"])))
+            self.tableWidget.setItem(cnt, 4, QtGui.QTableWidgetItem(str(row["completed"]) if row["completed"] else ""))
+            self.tableWidget.setItem(cnt, 5, QtGui.QTableWidgetItem(str(row["created"])))
+            QtGui.qApp.processEvents()
+
+        self.tableWidget.resizeColumnsToContents()
 
 
     def createDockWindows(self):
