@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 12:48:29.567
+@changed : 2012-11-04 21:23:17.516
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -19,7 +19,7 @@ from datetime import datetime, date, timedelta
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 6)
+__version__  = (0, 0, 7)
 
 
 def getVersion():
@@ -111,10 +111,14 @@ class MainWindow(QtGui.QMainWindow):
 
     def createActions(self):
         """Create actions (for menu etc)."""
+        self.newTaskAction = QtGui.QAction(QtGui.QIcon('images/editadd.png'),
+                self.tr("Add TODO item"), self, shortcut=QtGui.QKeySequence.New,
+                statusTip=self.tr("Adding new TODO item"), triggered=self.newTask)
         self.exitAction = QtGui.QAction(QtGui.QIcon('images/exit.png'), self.tr('Exit'), self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip(self.tr('Exit application'))
-        self.aboutAction = QtGui.QAction(self.tr("&About"), self, statusTip=self.tr("Show the application's About box"), triggered=self.about)
+        self.aboutAction = QtGui.QAction(QtGui.QIcon('images/about.png'),
+                self.tr("&About"), self, statusTip=self.tr("Show the application's About box"), triggered=self.about)
         self.aboutQtAction = QtGui.QAction(self.tr("About &Qt"), self, statusTip=self.tr("Show the Qt library's About box"), triggered=QtGui.qApp.aboutQt)
         self.connect(self.exitAction, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
 
@@ -122,6 +126,8 @@ class MainWindow(QtGui.QMainWindow):
     def createMenus(self):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu(self.tr('&File'))
+        fileMenu.addAction(self.newTaskAction)
+        fileMenu.addSeparator()
         fileMenu.addAction(self.exitAction)
 
         self.viewMenu = menubar.addMenu(self.tr("&View"))
@@ -134,9 +140,13 @@ class MainWindow(QtGui.QMainWindow):
 
 
     def createToolBars(self):
-        fileToolBar = self.addToolBar("File")
-        fileToolBar.setObjectName("FileToolbar")
-        fileToolBar.addAction(self.exitAction)
+        taskToolBar = self.addToolBar("Task")
+        taskToolBar.setObjectName("TaskToolbar")
+        taskToolBar.addAction(self.newTaskAction)
+
+        exitToolBar = self.addToolBar("Exit")
+        exitToolBar.setObjectName("ExitToolbar")
+        exitToolBar.addAction(self.exitAction)
 
 
     def createStatusBar(self):
@@ -168,7 +178,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def refreshTable(self):
         self.tableWidget.setRowCount(0)
-        rows = self.db.execSql("select * from TodoTask where completed is null")
+        rows = self.db.execSql("select * from TodoTask where status=0")
         for row in rows:
             cnt = self.tableWidget.rowCount()
             self.tableWidget.insertRow(cnt)
@@ -193,6 +203,10 @@ class MainWindow(QtGui.QMainWindow):
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dockWidget)
         self.viewMenu.addAction(dockWidget.toggleViewAction())
         if not self.debug: dockWidget.close()
+
+
+    def newTask(self):
+        QtGui.QMessageBox.information(self, self.tr("New task"), self.tr("New task button clicked..."))
 
 
     def about(self):
