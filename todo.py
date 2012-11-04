@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 01:37:40.364
+@changed : 2012-11-04 11:46:55.845
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -18,7 +18,7 @@ from datetime import datetime
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 3)
+__version__  = (0, 0, 4)
 
 
 def getVersion():
@@ -50,7 +50,7 @@ class MainWindow(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.resize(600, 400)
-        self.setWindowTitle(self.tr('TODO'))
+        self.setWindowTitle(self.tr('Todo'))
         self.createActions()
         self.createMenus()
         self.createToolBars()
@@ -153,7 +153,10 @@ class MainWindow(QtGui.QMainWindow):
 
     def about(self):
         QtGui.QMessageBox.about(self, self.tr("About Application"),
-                self.tr("The purpose of the <b>Application</b> is to ..."))
+                self.tr("The purpose of the <b>Application</b> is:<br>"
+                        "&nbsp;&nbsp;&nbsp;&nbsp;- the management of TODO lists..."
+                        "<br><br>author: <a href='mailto:qprostu@gmail.com'>Igor A.Vetrov</a> &copy; 2012"
+                        "<hr>Version: {}").format(getVersion()))
 
 
 
