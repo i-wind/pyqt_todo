@@ -3,7 +3,7 @@
 """
 @script  : model.py
 @created : 2012-11-04 01:48:15.090
-@changed : 2012-11-05 16:43:09.445
+@changed : 2012-11-05 18:01:57.725
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : model of TODO application
@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from .sqlite import Field
 
 
-__revision__ = 7
+__revision__ = 8
 __project__  = "Todo"
 
 
@@ -70,6 +70,7 @@ class Table(object):
 
 
     def read(self, id):
+        """Reading values from database table into dictionary"""
         sql = "select * from {} where {}=?".format(self._tableName, self._idName)
         row = self.db.execSql(sql, (id,))[0]
         result = {}
@@ -80,6 +81,47 @@ class Table(object):
         else:
             raise AttributeError("id " + str(id) + " does not exists")
         return result
+
+
+    def existsId(cls, id):
+        """Checking existence of id"""
+        sql = "select count(*) from {} where {}=?".format( self._tableName, self.idName )
+        row = self.db.execSql(sql, (id,))[0]
+        return bool(row[0])
+
+
+    def save(self, id, **args):
+        """Saving values from dictionary into database table"""
+        if id and self.existsId(id):
+            sets = []; vals = []
+            for col in args:
+                if col!=self._idName and col!='id':
+                    sets.append(col + '=?')
+                    vals.append(args[col])
+            sql = "update {} set {} where {}=?".format(self._tableName, ", ".join(sets), self._idName)
+            print(sql)
+            vals.append(self._idName)
+            cursor = self.db.conn.cursor()
+            cursor.execute(sql, vals)
+            self.db.conn.commit()
+        else:
+            for col in args:
+                if not col in self._columns:
+                    raise KeyError(col + ' is not a valid column')
+            if 'id' in args: del args['id']
+            cols = ", ".join(args.keys())
+            qmarks = ", ".join(['?']*len(args))
+            if len(cols):
+                sql = "insert into {} ({}) values ({})".format(self._tableName, cols, qmarks)
+            else:
+                sql = "insert into {} default values".format(self._tableName)
+            cursor = self.db.conn.execute(sql, tuple(args.values()))
+            self.db.conn.commit()
+            if self._idName=='id':
+                args["id"] = cursor.lastrowid
+            else:
+                args["id"] = args[self._idName]
+        return args
 
 
     def setDefaults(self):
