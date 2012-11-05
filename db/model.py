@@ -3,7 +3,7 @@
 """
 @script  : model.py
 @created : 2012-11-04 01:48:15.090
-@changed : 2012-11-04 18:48:27.550
+@changed : 2012-11-05 16:28:24.829
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : model of TODO application
@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from .sqlite import Field
 
 
-__revision__ = 5
+__revision__ = 6
 __project__  = "Todo"
 
 
@@ -27,27 +27,46 @@ def getRevision():
 class Table(object):
     """Abstract base model class"""
 
-    _fields = []
+    _tableName = ""
+    _fields    = []
+    _idName    = ""
+    _columns   = []
+    _indices   = []
 
     def __init__(self, db):
         super(Table, self).__init__()
         self.db = db
-        self.columns = [ k for k, v in self._fields]
-        self.indices = [ k for k, v in self._fields if v.index ]
+        self.__class__._columns = [ k for k, v in self._fields]
+        self.__class__._indices = [ k for k, v in self._fields if v.index ]
+        self.__class__._idName = "id"
+        for k, v in self._fields:
+            if v.primary:
+                self.__class__._idName = k
+                break
         self.checkTable()
 
 
     def checkTable(self):
         if self.__class__.__name__=="Table": return
-        if self.name not in self.db.getTables():
+        if self._tableName not in self.db.getTables():
             self.db.execSql( self.createSql() )
             self.db.commit()
             self.setDefaults()
-        if self.indices:
-            for i in self.indices:
-                sql = "create index if not exists {0}_{1}_index on {0}({1});".format(self.name, i)
-                self.db.execSql( sql )
-                self.db.commit()
+        for i in self._indices:
+            sql = "create index if not exists {0}_{1}_index on {0}({1});".format(self._tableName, i)
+            self.db.execSql( sql )
+            self.db.commit()
+
+
+    def openId(self, id):
+        sql = "select * from {} where {}=?".format(self._tableName, self._idName)
+        row = self.db.execSql(sql, (id,))[0]
+        if row:
+            for col in self._columns:
+                setattr(self, col, row[col])
+            self.id = id
+        else:
+            raise AttributeError("id " + str(id) + " does not exists")
 
 
     def setDefaults(self):
@@ -55,11 +74,11 @@ class Table(object):
 
 
     def count(self):
-        return self.db.execSql( "select count(*) from {};".format(self.name) )[0][0]
+        return self.db.execSql( "select count(*) from {};".format(self._tableName) )[0][0]
 
 
     def createSql(self):
-        sql = ["create table {}(".format(self.name),]
+        sql = ["create table {}(".format(self._tableName),]
         primary = False
         for name, field in self._fields:
             sql.append("\t" + name + " " + field.coldef + ",")
@@ -83,14 +102,14 @@ class Priority(Table):
     ]
 
     def __init__(self, db):
-        self.name = __project__ + self.__class__.__name__
+        self.__class__._tableName = __project__ + self.__class__.__name__
         super(Priority, self).__init__(db)
 
 
     def setDefaults(self):
-        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self.name), (1, "Low") )
-        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self.name), (2, "Medium") )
-        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self.name), (3, "High") )
+        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self._tableName), (1, "Low") )
+        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self._tableName), (2, "Medium") )
+        self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self._tableName), (3, "High") )
         self.db.commit()
 
 
@@ -109,7 +128,7 @@ class Task(Table):
     ]
 
     def __init__(self, db):
-        self.name = __project__ + self.__class__.__name__
+        self.__class__._tableName = __project__ + self.__class__.__name__
         super(Task, self).__init__(db)
 
 
