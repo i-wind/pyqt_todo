@@ -3,7 +3,7 @@
 """
 @script  : test_model.py
 @created : 2012-11-04 02:28:46.742
-@changed : 2012-11-05 16:44:45.833
+@changed : 2012-11-05 18:03:39.698
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : testing application model classes
@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 from sqlite3 import IntegrityError
 
 
-__revision__ = 7
+__revision__ = 8
 
 
 
@@ -175,11 +175,25 @@ class TaskTable(unittest.TestCase):
 
 
     def test_read(self):
-        args = self.task.read(2) 
+        args = self.task.read(2)
         self.assertEqual( args["id"], 2 )
         self.assertEqual( args["name"], "Medium Test" )
         self.assertEqual( args["priority"], 2 )
         self.assertEqual( args["deadline"], date.today() + timedelta(3) )
+
+
+    def test_save(self):
+        args = dict(name="Highest Test", priority=3, deadline=date.today()+timedelta(5))
+        args = self.task.save("", **args)
+        self.assertEqual( self.task.count(), 4 )
+        self.assertEqual( args["id"], 4 )
+        del args
+        args = self.task.read(4)
+        self.assertEqual( args["id"], 4 )
+        self.assertEqual( args["status"], 0 )
+        self.assertEqual( args["name"], "Highest Test" )
+        self.assertEqual( args["priority"], 3 )
+        self.assertEqual( args["deadline"], date.today() + timedelta(5) )
 
 
 
