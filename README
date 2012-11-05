@@ -1,5 +1,5 @@
-Standalone TODO list application to manage personal tasks.
+Standalone pyqt TODO list application to manage personal tasks with
+internationalization.
 
 Created in Python version 3.3.0
-
 For storage using SQLite database.
