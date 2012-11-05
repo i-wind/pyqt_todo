@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-04 22:45:27.725
+@changed : 2012-11-05 12:34:40.842
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 10)
+__version__  = (0, 0, 11)
 
 
 def getVersion():
@@ -118,6 +118,9 @@ class MainWindow(QtGui.QMainWindow):
                 self.tr("Complete TODO item"), self, statusTip=self.tr("Completing TODO item"), triggered=self.completeTask)
         self.deleteAction = QtGui.QAction(QtGui.QIcon('images/editdelete.png'),
                 self.tr("Delete TODO item"), self, statusTip=self.tr("Deleting TODO item"), triggered=self.deleteTask)
+        self.editAction = QtGui.QAction(QtGui.QIcon('images/filenew.png'),
+                self.tr("Edit TODO item"), self, shortcut=QtCore.Qt.CTRL|QtCore.Qt.Key_E,
+                statusTip=self.tr("Editing TODO item"), triggered=self.editTask)
         self.exitAction = QtGui.QAction(QtGui.QIcon('images/exit.png'), self.tr('Exit'), self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip(self.tr('Exit application'))
@@ -131,6 +134,8 @@ class MainWindow(QtGui.QMainWindow):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu(self.tr('&File'))
         fileMenu.addAction(self.newTaskAction)
+        fileMenu.addAction(self.editAction)
+        fileMenu.addAction(self.completeAction)
         fileMenu.addSeparator()
         fileMenu.addAction(self.exitAction)
 
@@ -147,6 +152,7 @@ class MainWindow(QtGui.QMainWindow):
         taskToolBar = self.addToolBar("Task")
         taskToolBar.setObjectName("TaskToolbar")
         taskToolBar.addAction(self.newTaskAction)
+        taskToolBar.addAction(self.editAction)
         taskToolBar.addAction(self.completeAction)
 
         exitToolBar = self.addToolBar("Exit")
@@ -167,6 +173,7 @@ class MainWindow(QtGui.QMainWindow):
     def openContextMenu(self, position):
         menu = QtGui.QMenu(self)
         menu.addAction(self.newTaskAction)
+        menu.addAction(self.editAction)
         menu.addAction(self.completeAction)
         menu.addSeparator()
         menu.addAction(self.deleteAction)
@@ -192,6 +199,7 @@ class MainWindow(QtGui.QMainWindow):
         #self.addActions(self.tableWidget, (self.newAction, self.aboutAction))
         self.tableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tableWidget.customContextMenuRequested.connect(self.openContextMenu)
+        self.tableWidget.cellDoubleClicked.connect(self.rowDblClick)
         self.refreshTable()
 
 
@@ -231,6 +239,40 @@ class MainWindow(QtGui.QMainWindow):
             row = self.db.execSql( 'select code from TodoPriority where name=?', (dialog.priority.currentText(),) )[0]
             values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate() )
             self.db.execSql('insert into TodoTask (name, priority, deadline) values(?, ?, ?);', values )
+            self.db.commit()
+            self.refreshTable()
+
+
+    def rowDblClick(self, row, col):
+        self._updateTask(row)
+
+
+    def editTask(self):
+        # index of currently selected row
+        row = self.tableWidget.currentRow()
+        if row==-1:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setWindowTitle(self.tr('Edit'))
+            msgBox.setText(self.tr('Select a task to edit!'))
+            msgBox.exec_()
+        else:
+            self._updateTask(row)
+
+
+    def _updateTask(self, row):
+        # id of currently selected row
+        _id = int(self.tableWidget.item(row, 0).text())
+        row = self.db.execSql('select * from TodoTask where id=?', (_id,))[0]
+        # open dialog for editing record
+        dialog = NewTaskDialog(self)
+        dialog.name.setText(row['name'])
+        dialog.priority.addItems(['Low', 'Medium', 'High'])
+        dialog.priority.setCurrentIndex(row['priority']-1)
+        dialog.deadline.setDate(row['deadline'])
+        if dialog.exec_():
+            row = self.db.execSql( 'select code from TodoPriority where name=?', (dialog.priority.currentText(),) )[0]
+            values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate(), _id )
+            self.db.execSql('update TodoTask set name=?, priority=?, deadline=? where id=?;', values )
             self.db.commit()
             self.refreshTable()
 
