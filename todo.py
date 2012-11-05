@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-05 12:34:40.842
+@changed : 2012-11-05 19:14:22.450
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 11)
+__version__  = (0, 0, 12)
 
 
 def getVersion():
@@ -51,7 +51,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        self.resize(600, 400)
         self.setWindowTitle(self.tr('Todo'))
         self.createActions()
         self.createMenus()
@@ -126,7 +125,8 @@ class MainWindow(QtGui.QMainWindow):
         self.exitAction.setStatusTip(self.tr('Exit application'))
         self.aboutAction = QtGui.QAction(QtGui.QIcon('images/about.png'),
                 self.tr("&About"), self, statusTip=self.tr("Show the application's About box"), triggered=self.about)
-        self.aboutQtAction = QtGui.QAction(self.tr("About &Qt"), self, statusTip=self.tr("Show the Qt library's About box"), triggered=QtGui.qApp.aboutQt)
+        self.aboutQtAction = QtGui.QAction(QtGui.QIcon('images/qt-logo.png'), self.tr("About &Qt"),
+                self, statusTip=self.tr("Show the Qt library's About box"), triggered=QtGui.qApp.aboutQt)
         self.connect(self.exitAction, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
 
 
@@ -336,11 +336,16 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon("images/home.png"))
 
-    QtCore.QTextCodec.setCodecForTr( QtCore.QTextCodec.codecForName("utf8") );
-    translator = QtCore.QTranslator()
-    translator.load('translations/todo')
-    #QtGui.qApp.installTranslator(translator)
-    app.installTranslator(translator)
+    # read settings
+    settings = QtCore.QSettings("todo.conf", QtCore.QSettings.IniFormat)
+    # application internationalization
+    lang = settings.value("Default/APP_LANGUAGE")
+    del settings
+    if lang:
+        QtCore.QTextCodec.setCodecForTr( QtCore.QTextCodec.codecForName("utf8") );
+        translator = QtCore.QTranslator()
+        translator.load("translations/todo_" + lang)
+        app.installTranslator(translator)
 
     main = MainWindow()
     main.show()

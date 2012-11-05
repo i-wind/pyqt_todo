@@ -1,0 +1,23 @@
+# make .ts file from single .py script
+pylupdate4 todo.py -ts todo_ru.ts
+
+# it's better to create project todo.pro (like qt)
+SOURCES      = todo.py \
+		ui/dlg_newtask.py
+TRANSLATIONS = todo_ru.ts
+
+# and exec
+pylupdate4 todo.pro
+
+# further translate todo_ru.ts in utf8 local language
+# it can be in Qt Linguist or by handls
+# and exec
+lrelease todo.pro
+
+# add next lines to application
+    translator = QtCore.QTranslator()
+    translator.load('todo')
+    #QtGui.qApp.installTranslator(translator)
+    app.installTranslator(translator)
+
+# and you are lucky!
