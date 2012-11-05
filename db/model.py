@@ -3,7 +3,7 @@
 """
 @script  : model.py
 @created : 2012-11-04 01:48:15.090
-@changed : 2012-11-05 16:28:24.829
+@changed : 2012-11-05 16:43:09.445
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : model of TODO application
@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from .sqlite import Field
 
 
-__revision__ = 6
+__revision__ = 7
 __project__  = "Todo"
 
 
@@ -67,6 +67,19 @@ class Table(object):
             self.id = id
         else:
             raise AttributeError("id " + str(id) + " does not exists")
+
+
+    def read(self, id):
+        sql = "select * from {} where {}=?".format(self._tableName, self._idName)
+        row = self.db.execSql(sql, (id,))[0]
+        result = {}
+        if row:
+            for col in self._columns:
+                result[col] = row[col]
+            result["id"] = id
+        else:
+            raise AttributeError("id " + str(id) + " does not exists")
+        return result
 
 
     def setDefaults(self):
