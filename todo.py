@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-05 19:14:22.450
+@changed : 2012-11-06 17:18:12.328
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 12)
+__version__  = (0, 0, 13)
 
 
 def getVersion():
@@ -211,7 +211,7 @@ class MainWindow(QtGui.QMainWindow):
             self.tableWidget.insertRow(cnt)
             self.tableWidget.setItem(cnt, 0, QtGui.QTableWidgetItem(str(row["id"])))
             self.tableWidget.setItem(cnt, 1, QtGui.QTableWidgetItem(row["name"]))
-            self.tableWidget.setItem(cnt, 2, QtGui.QTableWidgetItem(str(row["priority"])))
+            self.tableWidget.setItem(cnt, 2, QtGui.QTableWidgetItem(self.priority.getName(row["priority"])))
             self.tableWidget.setItem(cnt, 3, QtGui.QTableWidgetItem(str(row["deadline"])))
             self.tableWidget.setItem(cnt, 4, QtGui.QTableWidgetItem(str(row["completed"]) if row["completed"] else ""))
             self.tableWidget.setItem(cnt, 5, QtGui.QTableWidgetItem(str(row["created"])))
@@ -224,7 +224,7 @@ class MainWindow(QtGui.QMainWindow):
         dockWidget = QtGui.QDockWidget(self.tr("Log"), self)
         dockWidget.setObjectName("LogDockWidget")
         dockWidget.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|
-                                  QtCore.Qt.RightDockWidgetArea)
+                                   QtCore.Qt.RightDockWidgetArea)
         self.logWidget = QtGui.QListWidget()
         dockWidget.setWidget(self.logWidget)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dockWidget)
@@ -234,12 +234,13 @@ class MainWindow(QtGui.QMainWindow):
 
     def newTask(self):
         dialog = NewTaskDialog(self)
-        dialog.priority.addItems(['Low', 'Medium', 'High'])
+        dialog.priority.addItems(self.priority.listNames())
         if dialog.exec_():
-            row = self.db.execSql( 'select code from TodoPriority where name=?', (dialog.priority.currentText(),) )[0]
-            values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate() )
-            self.db.execSql('insert into TodoTask (name, priority, deadline) values(?, ?, ?);', values )
-            self.db.commit()
+            args = {}
+            args["name"] = dialog.name.text()
+            args["priority"] = self.priority.getCode( dialog.priority.currentText() )
+            args["deadline"] = dialog.deadline.date().toPyDate()
+            args = self.task.save("", **args)
             self.refreshTable()
 
 
@@ -262,18 +263,18 @@ class MainWindow(QtGui.QMainWindow):
     def _updateTask(self, row):
         # id of currently selected row
         _id = int(self.tableWidget.item(row, 0).text())
-        row = self.db.execSql('select * from TodoTask where id=?', (_id,))[0]
+        row = self.task.read(_id)
         # open dialog for editing record
         dialog = NewTaskDialog(self)
-        dialog.name.setText(row['name'])
-        dialog.priority.addItems(['Low', 'Medium', 'High'])
+        dialog.name.setText(row["name"])
+        dialog.priority.addItems(self.priority.listNames())
         dialog.priority.setCurrentIndex(row['priority']-1)
         dialog.deadline.setDate(row['deadline'])
         if dialog.exec_():
-            row = self.db.execSql( 'select code from TodoPriority where name=?', (dialog.priority.currentText(),) )[0]
-            values = ( dialog.name.text(), row["code"], dialog.deadline.date().toPyDate(), _id )
-            self.db.execSql('update TodoTask set name=?, priority=?, deadline=? where id=?;', values )
-            self.db.commit()
+            row["name"] = dialog.name.text()
+            row["priority"] = self.priority.getCode( dialog.priority.currentText() )
+            row["deadline"] = dialog.deadline.date().toPyDate()
+            args = self.task.save(_id, **row)
             self.refreshTable()
 
 
