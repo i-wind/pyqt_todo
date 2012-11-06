@@ -3,7 +3,7 @@
 """
 @script  : test_model.py
 @created : 2012-11-04 02:28:46.742
-@changed : 2012-11-05 18:03:39.698
+@changed : 2012-11-06 18:15:24.501
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : testing application model classes
@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 from sqlite3 import IntegrityError
 
 
-__revision__ = 8
+__revision__ = 9
 
 
 
@@ -81,10 +81,42 @@ class PriorityTable(unittest.TestCase):
 
 
     def test_read(self):
-        args = self.table.read(2) 
+        args = self.table.read(2)
         self.assertEqual( args["code"], 2 )
         self.assertEqual( args["name"], "Medium" )
         self.assertEqual( args["id"], 2 )
+
+
+    def test_save(self):
+        args = dict(code=9, name="Unused")
+        args = self.table.save("", **args)
+        self.assertEqual( self.table.count(), 4 )
+        self.assertEqual( args["id"], 9 )
+        del args
+        args = self.table.read(9)
+        self.assertEqual( args["id"], 9 )
+        self.assertEqual( args["code"], 9 )
+        self.assertEqual( args["name"], "Unused" )
+
+
+    def test_update(self):
+        args = dict(code=9, name="Unused")
+        args = self.table.save("", **args)
+        del args
+        args = self.table.read(9)
+        args["name"] = "Used"
+        args = self.table.save(9, **args)
+        del args
+        args = self.table.read(9)
+        self.assertEqual( args["id"], 9 )
+        self.assertEqual( args["code"], 9 )
+        self.assertEqual( args["name"], "Used" )
+
+
+    def test_delete(self):
+        args = self.table.deleteId(2)
+        self.assertEqual( self.table.count(), 2 )
+        self.assertFalse( self.table.existsId(2) )
 
 
 
@@ -194,6 +226,12 @@ class TaskTable(unittest.TestCase):
         self.assertEqual( args["name"], "Highest Test" )
         self.assertEqual( args["priority"], 3 )
         self.assertEqual( args["deadline"], date.today() + timedelta(5) )
+
+
+    def test_delete(self):
+        args = self.task.deleteId(3)
+        self.assertEqual( self.task.count(), 2 )
+        self.assertFalse( self.task.existsId(3) )
 
 
 
