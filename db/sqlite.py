@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-06 15:06:12.623
+@changed : 2012-11-06 16:48:01.086
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 4
+__revision__ = 5
 
 
 def getRevision():
@@ -112,24 +112,23 @@ class Table(object):
         return result
 
 
-    def existsId(cls, id):
+    def existsId(self, _id):
         """Checking existence of id"""
-        sql = "select count(*) from {} where {}=?".format( self._tableName, self.idName )
-        row = self.db.execSql(sql, (id,))[0]
+        sql = "select count(*) from {} where {}=?".format( self._tableName, self._idName )
+        row = self.db.execSql(sql, (_id,))[0]
         return bool(row[0])
 
 
-    def save(self, id, **args):
+    def save(self, _id, **args):
         """Saving values from dictionary into database table"""
-        if id and self.existsId(id):
+        if _id and self.existsId(_id):
             sets = []; vals = []
             for col in args:
                 if col!=self._idName and col!='id':
                     sets.append(col + '=?')
                     vals.append(args[col])
             sql = "update {} set {} where {}=?".format(self._tableName, ", ".join(sets), self._idName)
-            print(sql)
-            vals.append(self._idName)
+            vals.append(_id)
             cursor = self.db.conn.cursor()
             cursor.execute(sql, vals)
             self.db.conn.commit()
