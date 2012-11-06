@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-06 17:18:12.328
+@changed : 2012-11-06 18:38:25.289
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 13)
+__version__  = (0, 0, 14)
 
 
 def getVersion():
@@ -312,8 +312,7 @@ class MainWindow(QtGui.QMainWindow):
             self.tableWidget.removeRow( row )
             # remove record from database
             self.logger.write( "{} delete from TodoTask where id={}".format(now(), _id) )
-            self.db.execSql( 'delete from TodoTask where id=?', (int(_id),) )
-            self.db.commit()
+            self.task.deleteId(_id)
             self.statusBar().showMessage('Deleted record id=' + _id, 5000)
 
 
