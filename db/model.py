@@ -3,7 +3,7 @@
 """
 @script  : model.py
 @created : 2012-11-04 01:48:15.090
-@changed : 2012-11-06 15:06:02.890
+@changed : 2012-11-06 17:01:45.356
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : model of TODO application
@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from .sqlite import Table, Field
 
 
-__revision__ = 9
+__revision__ = 10
 __project__  = "Todo"
 
 
@@ -43,6 +43,21 @@ class Priority(Table):
         self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self._tableName), (2, "Medium") )
         self.db.execSql( "insert into {} (code, name) values(?, ?)".format(self._tableName), (3, "High") )
         self.db.commit()
+
+
+    def getCode(self, name):
+        row = self.db.execSql( "select code from {} where name=?;".format(self._tableName), (name,) )[0]
+        return row["code"]
+
+
+    def getName(self, _id):
+        row = self.db.execSql( "select name from {} where {}=?;".format(self._tableName, self._idName), (_id,) )[0]
+        return row["name"]
+
+
+    def listNames(self):
+        rows = self.db.execSql( "select name from {};".format(self._tableName) )
+        return [row["name"] for row in rows]
 
 
 
