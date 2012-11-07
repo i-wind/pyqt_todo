@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-07 22:43:29.916
+@changed : 2012-11-08 01:47:26.712
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 7
+__revision__ = 8
 
 
 def getRevision():
@@ -177,6 +177,16 @@ class Table(object):
         """Deleting record with id"""
         sql = "delete from {} where {}=?;".format( self._tableName, self._idName )
         self.exec(sql, (_id,))
+
+
+    def getValue(self, _id, attr):
+        if not attr in self._columns:
+            raise AttributeError("No such column %s in %s" % (attr, self._tableName))
+        sql = 'select {} from {} where {}=?;'.format( attr, self._tableName, self._idName )
+        row = self.select(sql, (_id,))[0]
+        if not row:
+            raise AttributeError("id " + str(_id) + " does not exists")
+        return row[0]
 
 
     def setDefaults(self):
