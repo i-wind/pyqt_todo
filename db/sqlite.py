@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-08 01:47:26.712
+@changed : 2012-11-08 02:04:22.582
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 8
+__revision__ = 9
 
 
 def getRevision():
@@ -181,12 +181,22 @@ class Table(object):
 
     def getValue(self, _id, attr):
         if not attr in self._columns:
-            raise AttributeError("No such column %s in %s" % (attr, self._tableName))
+            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
         sql = 'select {} from {} where {}=?;'.format( attr, self._tableName, self._idName )
         row = self.select(sql, (_id,))[0]
         if not row:
             raise AttributeError("id " + str(_id) + " does not exists")
         return row[0]
+
+
+    def setValue(self, _id, attr, value):
+        """Setting field value"""
+        if not attr in self._columns:
+            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
+        sql = 'update {} set {}=? where {}=?;'.format( self._tableName, attr, self._idName )
+        cursor = self.exec(sql, (value, _id))
+        if not cursor.rowcount:
+            raise AttributeError("id " + str(_id) + " does not exists")
 
 
     def setDefaults(self):
