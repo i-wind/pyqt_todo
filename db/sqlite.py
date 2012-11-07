@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-06 18:13:07.236
+@changed : 2012-11-08 02:04:22.582
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 6
+__revision__ = 9
 
 
 def getRevision():
@@ -75,38 +75,62 @@ class Table(object):
         self.checkTable()
 
 
+    def select(self, sql, *args):
+        """Execution of select database query.
+        Returns the cursor values."""
+        return self.db.conn.execute(sql, *args).fetchall()
+
+
+    def exec(self, sql, *args):
+        """Execution of arbitrary database query.
+        Returns the cursor values."""
+        return self.db.conn.execute(sql, *args)
+
+
     def checkTable(self):
+        """Checking the table existence"""
         if self.__class__.__name__=="Table": return
         if self._tableName not in self.db.getTables():
-            self.db.execSql( self.createSql() )
+            self.exec( self.createSql() )
             self.db.commit()
             self.setDefaults()
-        for i in self._indices:
-            sql = "create index if not exists {0}_{1}_index on {0}({1});".format(self._tableName, i)
-            self.db.execSql( sql )
-            self.db.commit()
+            self.createIndices()
 
 
-    def openId(self, id):
-        sql = "select * from {} where {}=?".format(self._tableName, self._idName)
-        row = self.db.execSql(sql, (id,))[0]
+    def createIndices(self):
+        """Creating indexes"""
+        for index in self._indices:
+            sql = "create index if not exists {0}_{1}_index on {0}({1});".format(self._tableName, index)
+            self.exec( sql )
+
+
+    def dropIndices(self):
+        """Deleting indexes"""
+        for index in self._indices:
+            sql = "drop index if exists {0}_{1}_index;".format(self._tableName, index)
+            self.exec( sql )
+
+
+    def openId(self, _id):
+        sql = "select * from {} where {}=?;".format(self._tableName, self._idName)
+        row = self.select(sql, (_id,))[0]
         if row:
             for col in self._columns:
                 setattr(self, col, row[col])
-            self.id = id
+            self.id = _id
         else:
-            raise AttributeError("id " + str(id) + " does not exists")
+            raise AttributeError("id " + str(_id) + " does not exists")
 
 
-    def read(self, id):
+    def read(self, _id):
         """Reading values from database table into dictionary"""
-        sql = "select * from {} where {}=?".format(self._tableName, self._idName)
-        row = self.db.execSql(sql, (id,))[0]
+        sql = "select * from {} where {}=?;".format(self._tableName, self._idName)
+        row = self.select(sql, (_id,))[0]
         result = {}
         if row:
             for col in self._columns:
                 result[col] = row[col]
-            result["id"] = id
+            result["id"] = _id
         else:
             raise AttributeError("id " + str(id) + " does not exists")
         return result
@@ -114,8 +138,8 @@ class Table(object):
 
     def existsId(self, _id):
         """Checking existence of id"""
-        sql = "select count(*) from {} where {}=?".format( self._tableName, self._idName )
-        row = self.db.execSql(sql, (_id,))[0]
+        sql = "select count(*) from {} where {}=?;".format( self._tableName, self._idName )
+        row = self.select(sql, (_id,))[0]
         return bool(row[0])
 
 
@@ -127,11 +151,9 @@ class Table(object):
                 if col!=self._idName and col!='id':
                     sets.append(col + '=?')
                     vals.append(args[col])
-            sql = "update {} set {} where {}=?".format(self._tableName, ", ".join(sets), self._idName)
+            sql = "update {} set {} where {}=?;".format(self._tableName, ", ".join(sets), self._idName)
             vals.append(_id)
-            cursor = self.db.conn.cursor()
-            cursor.execute(sql, vals)
-            self.db.conn.commit()
+            self.exec(sql, vals)
         else:
             for col in args:
                 if not col in self._columns:
@@ -140,11 +162,10 @@ class Table(object):
             cols = ", ".join(args.keys())
             qmarks = ", ".join(['?']*len(args))
             if len(cols):
-                sql = "insert into {} ({}) values ({})".format(self._tableName, cols, qmarks)
+                sql = "insert into {} ({}) values ({});".format(self._tableName, cols, qmarks)
             else:
-                sql = "insert into {} default values".format(self._tableName)
-            cursor = self.db.conn.execute(sql, tuple(args.values()))
-            self.db.conn.commit()
+                sql = "insert into {} default values;".format(self._tableName)
+            cursor = self.exec(sql, tuple(args.values()))
             if self._idName=='id':
                 args["id"] = cursor.lastrowid
             else:
@@ -154,9 +175,28 @@ class Table(object):
 
     def deleteId(self, _id):
         """Deleting record with id"""
-        sql = "delete from {} where {}=?".format( self._tableName, self._idName )
-        self.db.execSql(sql, (_id,))
-        self.db.conn.commit()
+        sql = "delete from {} where {}=?;".format( self._tableName, self._idName )
+        self.exec(sql, (_id,))
+
+
+    def getValue(self, _id, attr):
+        if not attr in self._columns:
+            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
+        sql = 'select {} from {} where {}=?;'.format( attr, self._tableName, self._idName )
+        row = self.select(sql, (_id,))[0]
+        if not row:
+            raise AttributeError("id " + str(_id) + " does not exists")
+        return row[0]
+
+
+    def setValue(self, _id, attr, value):
+        """Setting field value"""
+        if not attr in self._columns:
+            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
+        sql = 'update {} set {}=? where {}=?;'.format( self._tableName, attr, self._idName )
+        cursor = self.exec(sql, (value, _id))
+        if not cursor.rowcount:
+            raise AttributeError("id " + str(_id) + " does not exists")
 
 
     def setDefaults(self):
@@ -164,7 +204,7 @@ class Table(object):
 
 
     def count(self):
-        return self.db.execSql( "select count(*) from {};".format(self._tableName) )[0][0]
+        return self.select( "select count(*) from {};".format(self._tableName) )[0][0]
 
 
     def createSql(self):
