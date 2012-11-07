@@ -3,7 +3,7 @@
 """
 @script  : todo.py
 @created : 2012-11-04 00:14:14.281
-@changed : 2012-11-06 18:38:25.289
+@changed : 2012-11-08 02:07:41.946
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 """
@@ -20,7 +20,7 @@ from ui.dlg_newtask import NewTaskDialog
 APP_DIR = os.path.dirname( __file__ )
 
 
-__version__  = (0, 0, 14)
+__version__  = (0, 0, 15)
 
 
 def getVersion():
@@ -103,7 +103,7 @@ class MainWindow(QtGui.QMainWindow):
         self.task = Task(self.db)
         # for testing purposes
         if self.task.count()==0:
-            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task.name),
+            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
                              ("Low Test", 1, date.today() + timedelta(2)) )
             self.db.commit()
 
