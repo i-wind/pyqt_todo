@@ -3,7 +3,7 @@
 """
 @script  : sqlite.py
 @created : 2012-11-04 00:29:46.091
-@changed : 2012-11-08 02:04:22.582
+@changed : 2012-11-08 03:01:54.997
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : module with SQLite utilities
@@ -16,7 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
-__revision__ = 9
+__revision__ = 10
 
 
 def getRevision():
@@ -179,24 +179,32 @@ class Table(object):
         self.exec(sql, (_id,))
 
 
-    def getValue(self, _id, attr):
-        if not attr in self._columns:
-            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
-        sql = 'select {} from {} where {}=?;'.format( attr, self._tableName, self._idName )
+    def getValue(self, _id, *args):
+        """Getting fields values"""
+        for arg in args:
+            if not arg in self._columns:
+                raise AttributeError("No such column {} in {}".format(arg, self._tableName))
+        sql = 'select {} from {} where {}=?;'.format( ", ".join(args), self._tableName, self._idName )
         row = self.select(sql, (_id,))[0]
         if not row:
             raise AttributeError("id " + str(_id) + " does not exists")
-        return row[0]
+        return tuple([row[arg] for arg in args])
 
 
-    def setValue(self, _id, attr, value):
-        """Setting field value"""
-        if not attr in self._columns:
-            raise AttributeError("No such column {} in {}".format(attr, self._tableName))
-        sql = 'update {} set {}=? where {}=?;'.format( self._tableName, attr, self._idName )
-        cursor = self.exec(sql, (value, _id))
-        if not cursor.rowcount:
+    def setValue(self, _id, **kvargs):
+        """Setting fields values"""
+        if not self.existsId(_id):
             raise AttributeError("id " + str(_id) + " does not exists")
+        sets = []; values = []
+        for arg, value in kvargs.items():
+            if not arg in self._columns:
+                raise AttributeError("No such column {} in {}".format(arg, self._tableName))
+            if not arg=="id":
+                sets.append(arg + '=?')
+                values.append(value)
+        sql = 'update {} set {} where {}=?;'.format( self._tableName, ", ".join(sets), self._idName )
+        values.append(_id)
+        self.exec(sql, tuple(values))
 
 
     def setDefaults(self):

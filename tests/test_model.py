@@ -3,7 +3,7 @@
 """
 @script  : test_model.py
 @created : 2012-11-04 02:28:46.742
-@changed : 2012-11-08 02:04:10.199
+@changed : 2012-11-08 03:01:40.860
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : testing application model classes
@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 from sqlite3 import IntegrityError
 
 
-__revision__ = 11
+__revision__ = 12
 
 
 
@@ -120,14 +120,14 @@ class PriorityTable(unittest.TestCase):
 
 
     def test_getValue(self):
-        value = self.table.getValue(2, "name")
-        self.assertEqual( value, "Medium" )
+        value = self.table.getValue(2, "code", "name")
+        self.assertEqual( value, (2, "Medium") )
 
 
     def test_setValue(self):
-        self.table.setValue(2, "name", "Changing Medium")
+        self.table.setValue(2, name="Changing Medium")
         value = self.table.getValue(2, "name")
-        self.assertEqual( value, "Changing Medium" )
+        self.assertEqual( value, ("Changing Medium",) )
 
 
 
@@ -247,13 +247,13 @@ class TaskTable(unittest.TestCase):
 
     def test_getValue(self):
         value = self.task.getValue(3, "name")
-        self.assertEqual( value, "High Test" )
+        self.assertEqual( value, ("High Test",) )
 
 
     def test_setValue(self):
-        self.task.setValue(3, "name", "Changing High Test")
-        value = self.task.getValue(3, "name")
-        self.assertEqual( value, "Changing High Test" )
+        self.task.setValue(3, name="Changing High Test", deadline=date.today() + timedelta(8))
+        value = self.task.getValue(3, "name", "deadline")
+        self.assertEqual( value, ("Changing High Test", date.today() + timedelta(8)) )
 
 
 
