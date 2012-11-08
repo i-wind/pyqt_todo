@@ -51,7 +51,7 @@ class Priority(Table):
 
 
     def getName(self, _id):
-        return self.getValue(_id, "name")
+        return self.getValue(_id, "name")[0]
 
 
     def listNames(self):
