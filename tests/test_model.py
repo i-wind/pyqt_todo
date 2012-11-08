@@ -135,14 +135,32 @@ class PriorityTable(unittest.TestCase):
         self.assertEqual( code, 3 )
 
 
-    def getName(self, _id):
+    def test_getName(self):
         name = self.table.getName(3)
         self.assertEqual( name, "High" )
 
 
-    def listNames(self):
+    def test_listNames(self):
         values = self.table.listNames()
         self.assertEqual( values, ["Low", "Medium", "High"] )
+
+
+    def test_repr(self):
+        self.table.open(2)
+        dt = self.table['created']
+        value = str(self.table)
+        self.assertEqual( value, "Priority([('created', {}, ('id', 2), ('code', 2), ('name', 'Medium')])".format(dt) )
+
+
+    def test_keys(self):
+        self.table.open(2)
+        self.assertEqual( set(list(self.table.keys())), set(["id", "code", "name", "created"]) )
+
+
+    def test_open(self):
+        obj = self.table
+        obj.open(3)
+        self.assertEqual( obj["name"], "High" )
 
 
 

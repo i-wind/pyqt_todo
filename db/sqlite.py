@@ -16,6 +16,7 @@ import threading
 from hashlib import md5
 import sqlite3
 
+
 __revision__ = 10
 
 
@@ -72,7 +73,40 @@ class Table(object):
             if v.primary:
                 self.__class__._idName = k
                 break
+        self._attrs = {}
         self.checkTable()
+
+
+    def __getitem__(self, key):
+        return self._attrs[key]
+
+
+    def __setitem__(self, key, value):
+        self._attrs[key] = value
+
+
+    def __delitem__(self, key):
+        del self._attrs[key]
+
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, list(self.items()))
+
+
+    def __iter__(self):
+        return self._attrs.__iter__()
+
+
+    def keys(self):
+        return self._attrs.keys()
+
+
+    def items(self):
+        return self._attrs.items()
+
+
+    def values(self):
+        return self._attrs.values()
 
 
     def select(self, sql, *args):
@@ -111,6 +145,13 @@ class Table(object):
             self.exec( sql )
 
 
+    def existsId(self, id):
+        """Checking existence of id"""
+        sql = "select count(*) from {} where {}=?;".format( self._tableName, self._idName )
+        row = self.select(sql, (id,))[0]
+        return bool(row[0])
+
+
     def openId(self, _id):
         sql = "select * from {} where {}=?;".format(self._tableName, self._idName)
         row = self.select(sql, (_id,))[0]
@@ -122,25 +163,35 @@ class Table(object):
             raise AttributeError("id " + str(_id) + " does not exists")
 
 
-    def read(self, _id):
+    def clear(self):
+        self._attrs.clear()
+
+
+    def open(self, id):
         """Reading values from database table into dictionary"""
         sql = "select * from {} where {}=?;".format(self._tableName, self._idName)
-        row = self.select(sql, (_id,))[0]
+        row = self.select(sql, (id,))[0]
+        self.clear()
+        if row:
+            for col in self._columns:
+                self._attrs[col] = row[col]
+            self._attrs["id"] = id
+        else:
+            raise AttributeError("id " + str(id) + " does not exists")
+
+
+    def read(self, id):
+        """Reading values from database table into dictionary"""
+        sql = "select * from {} where {}=?;".format(self._tableName, self._idName)
+        row = self.select(sql, (id,))[0]
         result = {}
         if row:
             for col in self._columns:
                 result[col] = row[col]
-            result["id"] = _id
+            result["id"] = id
         else:
             raise AttributeError("id " + str(id) + " does not exists")
         return result
-
-
-    def existsId(self, _id):
-        """Checking existence of id"""
-        sql = "select count(*) from {} where {}=?;".format( self._tableName, self._idName )
-        row = self.select(sql, (_id,))[0]
-        return bool(row[0])
 
 
     def save(self, _id, **args):
