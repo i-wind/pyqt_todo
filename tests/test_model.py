@@ -3,7 +3,7 @@
 """
 @script  : test_model.py
 @created : 2012-11-04 02:28:46.742
-@changed : 2012-11-08 03:01:40.860
+@changed : 2012-11-08 10:29:40.844
 @creator : mkpy.py --version 0.0.27
 @author  : Igor A.Vetrov <qprostu@gmail.com>
 @about   : testing application model classes
@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 from sqlite3 import IntegrityError
 
 
-__revision__ = 12
+__revision__ = 13
 
 
 
@@ -61,17 +61,17 @@ class PriorityTable(unittest.TestCase):
 
 
     def test_low(self):
-        row = self.db.execSql( "select name from {} where code=?;".format(self.table._tableName), (1,) )[0]
+        row = self.table.select( "select name from {} where code=?;".format(self.table._tableName), (1,) )[0]
         self.assertEqual( row["name"], "Low" )
 
 
     def test_medium(self):
-        row = self.db.execSql( "select name from {} where code=?;".format(self.table._tableName), (2,) )[0]
+        row = self.table.select( "select name from {} where code=?;".format(self.table._tableName), (2,) )[0]
         self.assertEqual( row["name"], "Medium" )
 
 
     def test_high(self):
-        row = self.db.execSql( "select name from {} where code=?;".format(self.table._tableName), (3,) )[0]
+        row = self.table.select( "select name from {} where code=?;".format(self.table._tableName), (3,) )[0]
         self.assertEqual( row["name"], "High" )
 
 
@@ -130,6 +130,21 @@ class PriorityTable(unittest.TestCase):
         self.assertEqual( value, ("Changing Medium",) )
 
 
+    def test_getCode(self):
+        code = self.table.getCode("High")
+        self.assertEqual( code, 3 )
+
+
+    def getName(self, _id):
+        name = self.table.getName(3)
+        self.assertEqual( name, "High" )
+
+
+    def listNames(self):
+        values = self.table.listNames()
+        self.assertEqual( values, ["Low", "Medium", "High"] )
+
+
 
 class TaskTable(unittest.TestCase):
 
@@ -139,12 +154,12 @@ class TaskTable(unittest.TestCase):
             self.db = SQLite(self.dbName)
             self.priority = Priority(self.db)
             self.task = Task(self.db)
-            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
-                             ("Low Test", 1, date.today() + timedelta(2)) )
-            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
-                             ("Medium Test", 2, date.today() + timedelta(3)) )
-            self.db.execSql( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
-                             ("High Test", 3, date.today() + timedelta(4)) )
+            self.task.exec( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
+                            ("Low Test", 1, date.today() + timedelta(2)) )
+            self.task.exec( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
+                            ("Medium Test", 2, date.today() + timedelta(3)) )
+            self.task.exec( "insert into {} (name, priority, deadline) values(?, ?, ?)".format(self.task._tableName),
+                            ("High Test", 3, date.today() + timedelta(4)) )
 
 
     def tearDown(self):
@@ -186,21 +201,21 @@ class TaskTable(unittest.TestCase):
 
 
     def test_low(self):
-        row = self.db.execSql( "select * from {} where id=?;".format(self.task._tableName), (1,) )[0]
+        row = self.task.select( "select * from {} where id=?;".format(self.task._tableName), (1,) )[0]
         self.assertEqual( row["name"], "Low Test" )
         self.assertEqual( row["priority"], 1 )
         self.assertEqual( row["deadline"], date.today() + timedelta(2) )
 
 
     def test_medium(self):
-        row = self.db.execSql( "select * from {} where id=?;".format(self.task._tableName), (2,) )[0]
+        row = self.task.select( "select * from {} where id=?;".format(self.task._tableName), (2,) )[0]
         self.assertEqual( row["name"], "Medium Test" )
         self.assertEqual( row["priority"], 2 )
         self.assertEqual( row["deadline"], date.today() + timedelta(3) )
 
 
     def test_high(self):
-        row = self.db.execSql( "select * from {} where id=?;".format(self.task._tableName), (3,) )[0]
+        row = self.task.select( "select * from {} where id=?;".format(self.task._tableName), (3,) )[0]
         self.assertEqual( row["name"], "High Test" )
         self.assertEqual( row["priority"], 3 )
         self.assertEqual( row["deadline"], date.today() + timedelta(4) )
